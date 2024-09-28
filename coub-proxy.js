@@ -52,7 +52,7 @@ class Coub {
         for (let i = seconds; i > 0; i--) {
             const timestamp = new Date().toLocaleTimeString();
             readline.cursorTo(process.stdout, 0);
-            process.stdout.write(`[${timestamp}] [*] Chờ ${i} giây để tiếp tục...`);
+            process.stdout.write(`[${timestamp}] [*] Waiting ${i} seconds to continue...`);
             await new Promise(resolve => setTimeout(resolve, 1000));
         }
         readline.cursorTo(process.stdout, 0);
@@ -107,7 +107,7 @@ class Coub {
         try {
             return await this.makeRequest('GET', url, headers, null, proxy);
         } catch (error) {
-            this.log(`Không thể đọc được phần thưởng. Error: ${error.message}`, 'error');
+            this.log(`Unable to read rewards. Error: ${error.message}`, 'error');
             return null;
         }
     }
@@ -123,14 +123,14 @@ class Coub {
         try {
             const response = await this.makeRequest('GET', url, headers, params, proxy);
             if (response) {
-                this.log(`Nhiệm vụ ${taskTitle} Hoàn thành`, 'success');
+                this.log(`Task ${taskTitle} Completed`, 'success');
                 return response;
             } else {
-                this.log(`Nhiệm vụ ${taskTitle} Thất bại`, 'warning');
+                this.log(`Task ${taskTitle} Failed`, 'warning');
                 return null;
             }
         } catch (error) {
-            this.log(`Nhiệm vụ ${taskTitle} Không thể nhận thưởng | error: ${error.message}`, 'error');
+            this.log(`Task ${taskTitle} Unable to claim reward | error: ${error.message}`, 'error');
             return null;
         }
     }
@@ -140,7 +140,7 @@ class Coub {
             const data = await fs.readFile('task.json', 'utf8');
             return JSON.parse(data);
         } catch (error) {
-            this.log(`Không thể đọc nhiệm vụ: ${error.message}`, 'error');
+            this.log(`Unable to read task: ${error.message}`, 'error');
             return [];
         }
     }
@@ -177,22 +177,22 @@ class Coub {
             apiToken = loginResponse.data.api_token;
         } catch (error) {
             if (error.response && error.response.status === 404) {
-                this.log('Đăng kí tài khoản...', 'warning');
+                this.log('Registering account...', 'warning');
                 try {
                     const signupResponse = await axios.post(signupUrl, data, config);
                     apiToken = signupResponse.data.api_token;
                 } catch (signupError) {
-                    this.log(`Lỗi khi đăng kí: ${signupError.message}`, 'error');
+                    this.log(`Error during registration: ${signupError.message}`, 'error');
                     throw signupError;
                 }
             } else {
-                this.log(`Lỗi khi login: ${error.message}`, 'error');
+                this.log(`Login error: ${error.message}`, 'error');
                 throw error;
             }
         }
 
         if (!apiToken) {
-            throw new Error('Không thể lấy được api_token');
+            throw new Error('Unable to retrieve api_token');
         }
 
         try {
@@ -211,7 +211,7 @@ class Coub {
 
             return token;
         } catch (error) {
-            this.log(`Lỗi khi lấy token từ torus: ${error.message}`, 'error');
+            this.log(`Error retrieving token from torus: ${error.message}`, 'error');
             throw error;
         }
     }
@@ -222,10 +222,10 @@ class Coub {
             return JSON.parse(data);
         } catch (error) {
             if (error.code === 'ENOENT') {
-                this.log('Không tìm thấy file token.json..tạo mới', 'info');
+                this.log('token.json not found..creating new one', 'info');
                 return {};
             }
-            this.log(`Lỗi đọc file token.json: ${error.message}`, 'error');
+            this.log(`Error reading token.json: ${error.message}`, 'error');
             return {};
         }
     }
@@ -238,12 +238,12 @@ class Coub {
             if (tokens[accountKey] !== token) {
                 tokens[accountKey] = token;
                 await fs.writeFile(this.tokenFile, JSON.stringify(tokens, null, 2));
-                this.log(`Lấy token thành công cho tài khoản ${accountIndex + 1}`, 'success');
+                this.log(`Successfully retrieved token for account ${accountIndex + 1}`, 'success');
             } else {
-                this.log(`Token của tài khoản ${accountIndex + 1} đã được cập nhật`, 'info');
+                this.log(`Token for account ${accountIndex + 1} already updated`, 'info');
             }
         } catch (error) {
-            this.log(`Lỗi rồi: ${error.message}`, 'error');
+            this.log(`Error: ${error.message}`, 'error');
             throw error;
         }
     }
@@ -257,7 +257,7 @@ class Coub {
                 .filter(Boolean)
                 .map(line => line.replace(/\r$/, ''));
         } catch (error) {
-            throw new Error(`Không thể đọc file data.txt: ${error.message}`);
+            throw new Error(`Unable to read data.txt file: ${error.message}`);
         }
     }
 
@@ -271,18 +271,18 @@ class Coub {
             
             if (parsedPayload.exp) {
                 const expirationDate = DateTime.fromSeconds(parsedPayload.exp).toLocal();
-                this.log(colors.cyan(`Token hết hạn vào: ${expirationDate.toFormat('yyyy-MM-dd HH:mm:ss')}`));
+                this.log(colors.cyan(`Token expires at: ${expirationDate.toFormat('yyyy-MM-dd HH:mm:ss')}`));
                 
                 const isExpired = now > parsedPayload.exp;
-                this.log(colors.cyan(`Token đã hết hạn chưa? ${isExpired ? 'Đúng rồi bạn cần thay token' : 'Chưa..chạy tẹt ga đi'}`));
+                this.log(colors.cyan(`Has the token expired? ${isExpired ? 'Yes, you need to replace the token' : 'No.. keep going'}`));
                 
                 return isExpired;
             } else {
-                this.log(colors.yellow(`Token vĩnh cửu không đọc được thời gian hết hạn`));
+                this.log(colors.yellow(`Eternal token cannot read expiration time`));
                 return false;
             }
         } catch (error) {
-            this.log(colors.red(`Lỗi rồi: ${error.message}`));
+            this.log(colors.red(`An error occurred: ${error.message}`));
             return true;
         }
     }
@@ -292,7 +292,7 @@ class Coub {
             const data = await fs.readFile('proxy.txt', 'utf8');
             this.proxyList = data.split('\n').filter(Boolean);
         } catch (error) {
-            this.log(`Không thể đọc file proxy.txt: ${error.message}`, 'error');
+            this.log(`Unable to read file proxy.txt: ${error.message}`, 'error');
         }
     }
 
@@ -303,20 +303,26 @@ class Coub {
             if (response.status === 200) {
                 return response.data.ip;
             } else {
-                throw new Error(`Không thể kiểm tra IP của proxy. Status code: ${response.status}`);
+                throw new Error(`Unable to check the IP of the proxy. Status code: ${response.status}`);
             }
         } catch (error) {
-            throw new Error(`Error khi kiểm tra IP của proxy: ${error.message}`);
+            throw new Error(`Error when checking the IP of the proxy: ${error.message}`);
         }
     }
 
     async main() {
+        const xTitle = "\n\x1b[1mCoub\x1b[0m";
+        const additionalText = "\nIf you use it, don't be afraid.\nIf you're afraid, don't use it.\nDo With Your Own Risk!\n";
+        
+        console.log(xTitle.green);
+        console.log(additionalText.yellow);
+
         try {
             const accountsData = await this.readAccountData();
             await this.loadProxies();
 
             if (accountsData.length === 0) {
-                throw new Error('Không tìm thấy dữ liệu hợp lệ trong data.txt');
+                throw new Error('No valid data found in data.txt');
             }
 
             const tasks = await this.loadTask();
@@ -332,25 +338,25 @@ class Coub {
                     try {
                         proxyIP = await this.checkProxyIP(proxy);
                     } catch (error) {
-                        this.log(`Không thể kiểm tra IP của proxy cho tài khoản ${i + 1}: ${error.message}`, 'warning');
+                        this.log(`Unable to check the IP of the proxy for account ${i + 1}: ${error.message}`, 'warning');
                         continue;
                     }
 
-                    this.log(`========== Tài khoản ${i + 1} | ip: ${proxyIP} ==========`, 'custom');
+                    this.log(`========== Account ${i + 1} | IP: ${proxyIP} ==========`, 'custom');
                     
                     if (!token || this.isExpired(token)) {
-                        this.log(`Token cho tài khoản ${i + 1} không tồn tại hoặc đã hết hạn. Đang lấy token mới...`, 'info');
+                        this.log(`Token for account ${i + 1} does not exist or has expired. Obtaining a new token...`, 'info');
                         try {
                             const rawAccountData = accountsData[i];
                             token = await this.getAndSaveToken(rawAccountData, i, proxy);
                             if (token) {
                                 tokens = await this.readTokens();
                             } else {
-                                this.log(`Lấy token thất bại cho tài khoản ${i + 1}. Chuyển tài khoản tiếp theo...`, 'error');
+                                this.log(`Failed to retrieve token for account ${i + 1}. Moving to the next account...`, 'error');
                                 continue;
                             }
                         } catch (error) {
-                            this.log(`Lấy token thất bại cho tài khoản ${i + 1}: ${error.message}`, 'error');
+                            this.log(`Failed to retrieve token for account ${i + 1}: ${error.message}`, 'error');
                             continue;
                         }
                     }
@@ -366,15 +372,15 @@ class Coub {
                             listId.push(id);
                         });
                     } else {
-                        this.log(`Không thể lấy phần thưởng cho tài khoản ${i + 1}`, 'warning');
+                        this.log(`Unable to retrieve rewards for account ${i + 1}`, 'warning');
                     }
 
                     for (const task of tasks) {
                         const id = task.id;
                         if (listId.includes(id)) {
-                            this.log(`${task.title} Hoàn thành...`, 'success');
+                            this.log(`${task.title} Completed...`, 'success');
                         } else {
-                            this.log(`Làm nhiệm vụ ${task.title.yellow}`, 'info');
+                            this.log(`Completing task ${task.title.yellow}`, 'info');
                             await this.claimTask(token, xTgAuth, task.id, task.title, proxy);
                         }
                     }
@@ -383,12 +389,12 @@ class Coub {
                 }
 
                 const delay = 24 * 3600 + Math.floor(Math.random() * 3600);
-                this.log(`Tất cả tài khoản đã được xử lý. Chờ ${Math.floor(delay / 3600)} giờ ${Math.floor((delay % 3600) / 60)} phút để chạy lại...`, 'info');
+                this.log(`All accounts have been processed. Waiting ${Math.floor(delay / 3600)} hours ${Math.floor((delay % 3600) / 60)} minutes to run again...`, 'info');
                 await this.countdown(delay);
             }
         } catch (error) {
             console.log(error);
-            this.log(`Lỗi rồi: ${error.message}`, 'error');
+            this.log(`An error occurred: ${error.message}`, 'error');
             if (error.stack) {
                 this.log(`Stack trace: ${error.stack}`, 'error');
             }
